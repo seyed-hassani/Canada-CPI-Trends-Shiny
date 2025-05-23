@@ -1,0 +1,77 @@
+---
+title: |
+  </p>![](Logo.jpg){width=1in}</p> 
+   STATS/CSE 780</p>  
+   Homework Assignment 1 
+   
+author: "Seyed Mohammad Mehdi Hassani Najafabadi(Student ID: 400489126)"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  html_document:
+    df_print: paged
+  pdf_document: null
+header-includes:
+  
+- \usepackage{amsmath}
+- \usepackage{bbm}
+- \usepackage{array}
+- \usepackage{multirow}
+- \usepackage{graphicx}
+- \usepackage{float}
+- \usepackage{apacite}
+- \usepackage{natbib}
+fontsize: 11pt
+geometry: margin = 1in
+linestretch: 1.5
+bibliography: ref.bib
+---
+@shiny web-based applications
+
+```{r}
+library(shiny)
+library(plotly)
+library(ggplot2)
+library(tidyr )
+load("Mytable_ON.RData")
+save(Mytable_ON, file="Mytable_ON")
+library(shiny)
+library(plotly)
+ui <- fluidPage(
+  selectInput(inputId = "y_var", 
+              label = "Choose desired category", 
+              choices = c("Food_Price", "Energy_Price", "Others"),
+              selected  = "Food_Price"),
+  dateInput(inputId = "start_date", label = "Start date", value = "2020-01-01"),
+  dateInput(inputId = "end_date", label = "End date", value = "2022-11-01"),
+  plotOutput(outputId = "pair_plot")
+)
+
+
+
+server <- function(input, output) {
+  data_filtered <- reactive({
+    start_date <- as.Date(paste0(input$start_date, "-01"), format = "%Y-%m-%d")
+    end_date <- as.Date(paste0(input$end_date, "-01"), format = "%Y-%m-%d")
+    Mytable_ON %>% filter(as.Date(Months, format = "%Y-%m-%d") >= start_date & 
+                            as.Date(Months, format = "%Y-%m-%d") <= end_date)
+  })
+  
+  # render the plot of changes in the selected category
+  output$pair_plot <- renderPlot({
+    category <- input$y_var
+    color <- ifelse(category == "Food_Price", "blue", 
+                    ifelse(category == "Energy_Price", "red", "green"))
+    ggplot(data_filtered(), aes_string(x = "Months", y = category)) + 
+      geom_line(color=color, size=1) + 
+      geom_point(color=color) +
+      labs(x = "Months", y = category) +
+      scale_x_date(limits = as.Date(c(input$start_date, input$end_date), format = "%Y-%m-%d"), expand = c(0, 0)) +
+      theme(panel.grid.minor = element_line(size = 0.1),
+            panel.grid.major = element_line(size = 0.1))
+  })
+  
+  
+}
+shinyApp(ui = ui, server = server)
+```
+

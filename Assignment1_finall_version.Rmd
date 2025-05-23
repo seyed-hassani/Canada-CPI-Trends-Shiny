@@ -1,0 +1,121 @@
+---
+title: |
+  </p>![](Logo.jpg){width=1in}</p> 
+   STATS/CSE 780</p>  
+   Homework Assignment 1 
+   
+author: "Seyed Mohammad Mehdi Hassani Najafabadi(Student ID: 400489126)"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  pdf_document: null
+  html_document:
+    df_print: paged
+header-includes:
+  
+- \usepackage{amsmath}
+- \usepackage{bbm}
+- \usepackage{array}
+- \usepackage{multirow}
+- \usepackage{graphicx}
+- \usepackage{float}
+- \usepackage{apacite}
+- \usepackage{natbib}
+fontsize: 11pt
+geometry: margin = 1in
+linestretch: 1.5
+---
+
+\newpage
+
+## Introduction
+
+he Consumer Price Index (CPI) represents changes in prices as experienced by Canadian consumers. It measures price change by comparing, through time, the cost of a fixed basket of goods and services.\
+The goods and services in the CPI basket are divided into 8 major components: Food; Shelter; Household operations, furnishings and equipment; Clothing and footwear; Transportation; Health and personal care; Recreation, education and reading, and Alcoholic beverages, tobacco products and recreational cannabis. CPI data are published at various levels of geography including Canada, the ten provinces, Whitehorse, Yellowknife and Iqaluit, and select cities.\
+In this report, the data of price indexes of Canadian customers before(i.e.Jan 2020) and after the pandemic(i.e.Nov 2021) has been extracted form statics Canada [[1]][1] analyzed. Additionally, the analysis includes some interpretation and comparison in terms of the fluctuation of price indexes in the pandemic period will be discussed.
+
+## Data Transformation and Preprocessing
+
+In this section the details of employed transformation and preprocessing methods have been presented and discussed. As described by the following table, raw data needs some tidiness and standardization to be fully prepared for extracting trends. At the first step, the functional data such table of data has been extracted form other data.
+
+```{r include=FALSE}
+data <- read.csv("1810000401-eng.csv")
+my_data <- dplyr::slice(data,11:25)
+my_data
+```
+
+According to the table, column names are not defined and it is required to extract the column names from "Product and products name" in the ninth row of the original table. The next step is to Substitute extracted column's name with undefined column names in the extracted table. Removing any unneeded character and number is the next step for preparing data.
+
+```{r echo=FALSE}
+col_names <- dplyr::slice(data,9 ) 
+col_names <- gsub("-", "- 20", col_names)
+col_names <-gsub("Jan", "1-1", col_names)
+col_names <-gsub("Feb", "1-2", col_names)
+col_names <-gsub("Mar", "1-3", col_names)
+col_names <-gsub("Apr", "1-4", col_names)
+col_names <-gsub("May", "1-5", col_names)
+col_names <-gsub("Jun", "1-6", col_names)
+col_names <-gsub("Jul", "1-7", col_names)
+col_names <-gsub("Aug", "1-8", col_names)
+col_names <-gsub("Sep", "1-9", col_names)
+col_names <-gsub("Oct", "1-10", col_names)
+col_names <-gsub("Nov", "1-11", col_names)
+col_names <- gsub("Dec","1-12", col_names)
+
+colnames(my_data) <- col_names 
+va <- my_data$`Products and product groups 3 4`
+cat_name <- gsub(".*[0-9]\\. ", "", va)
+cat_name <- lapply(stringr::str_split(va,"[0-9]"), 
+       unlist(function(x){x[1]}))
+cat_name <-make.names(cat_name)
+my_data$`Products and product groups 3 4`<- cat_name
+
+```
+
+Based on the tidiness rules, all the months name from column names should be summarize in a column with months names. On the other hand and due to the importance of energy and food prices, in this report they are analyzed in a separate columns and for all other items price the *All-items excluding food and energy* will be used for the underlying analysis.Therefore, our tidy table are consisted of four columns of ***Months***, ***food***,***energy***,***All-items excluding food and energy*** which is shown as follows:
+
+```{r}
+library(tidyr )
+library(reshape2 )
+Food_Price_1 <- melt(dplyr::filter(my_data,my_data$`Products and product groups 3 4`=="Food.")) 
+Energy_Price_1 <- melt(dplyr::filter(my_data,my_data$`Products and product groups 3 4`=="Energy."))
+Others_1 <- melt(dplyr::filter(my_data,my_data$`Products and product groups 3 4`=="All.items.excluding.food.and.energy."))
+mytable <-data.frame("Months" = col_names[2:length(col_names)]%>% as.Date(format = "%d-%m-%Y") ,"Food_Price" =  Food_Price_1[2:length(col_names)]%>% as.numeric(),"Energy_Price" =  Energy_Price_1[2:length(col_names)]%>% as.numeric(),"Others" =  Others_1[2:length(col_names)]%>% as.numeric(),row.names = NULL,check.names = FALSE)
+mytable
+```
+
+In this paper, three different rules of tidiness has been considered: 1- All the variables are listed on the columns. 2- All the observation are located in the rows. 3-
+
+## Visualization and Statistical Transfromation
+
+In this section, the preprocessed table is used to create some graphs of how the variables are changed and what are the patterns behind their changes. For the first step the scatter plot is employed as follows for all three categorizes:
+
+```{r}
+library(ggplot2)
+ggplot(data = mytable) +
+  geom_line(
+    aes(x = Months, y = Food_Price, color = "Food_Price")
+  ) +
+  geom_line(
+    aes(x = Months, y = Energy_Price, color = "Energy_Price")
+  ) +
+  geom_line(
+    aes(x = Months, y = Others, color = "Others")
+  ) +
+  geom_point(
+    aes(x = Months, y = Food_Price), 
+    col = "blue1"
+  ) +
+  geom_point(
+    aes(x = Months, y = Energy_Price), 
+    col = "red1"
+  ) +
+  geom_point(
+    aes(x = Months, y = Others), 
+    col = "green1"
+  ) +
+  labs(x = "Months", y = "Price", color = "Variable") +
+  ggtitle("Price trend for different variables") +
+  scale_color_manual(values = c("Food_Price" = "blue1", "Energy_Price" = "red1", "Others" = "green1")) +
+  theme(legend.title = element_blank())
+
+```
